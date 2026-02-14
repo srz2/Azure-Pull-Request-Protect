@@ -1,0 +1,32 @@
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    width: 500px;
+    border-radius: 10px;
+}
+
+li {
+    list-style-type: none;
+}
+
+#policy-description {
+    font-size: 0.8em;
+}
+
+.branch {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.new-policy {
+    border: 2px solid #ccc;
+    padding: 10px 0;
+    margin-top: 10px;
+    text-align: center;
+}
