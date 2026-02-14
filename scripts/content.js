@@ -29,6 +29,28 @@ const DEFAULTS = {
 let initialized = false;
 let settings = DEFAULTS;
 let completeButton = null;
+let currentWarningElement = null;
+let lastPathName = location.pathname;
+let lastSource = null;
+let lastTarget = null;
+
+async function loadSettings() {
+    const result = await chrome.storage.sync.get("settings");
+
+    settings = result.settings ?? DEFAULTS;
+
+    if (settings.verboseLogging) {
+        console.log("Settings loaded:", settings);
+    }
+
+    if (completeButton){
+        if (settings.disableCompleteOnPolicyViolation) {
+            completeButton.setAttribute("disabled", "true");
+        } else {
+            completeButton.removeAttribute("disabled");
+        }
+    }
+}
 
 function isPullRequestPage() {
     return window.location.href.includes("/pullrequest/");
@@ -131,7 +153,6 @@ function createWarningElement(innerText, violatedPolicies) {
     return warningElement
 }
 
-let currentWarningElement = null;
 function errorizePullRequest(completeButton, violatedPolicies){
     if (settings.verboseLogging) {
         console.log("Azure Pull Request Protect Extension: Pull request violates policies.");
@@ -203,9 +224,6 @@ async function init(){
     }
 }
 
-let lastPathName = location.pathname;
-let lastSource = null;
-let lastTarget = null;
 function shouldReinitialize() {
     // Location Changed
     if (location.pathname != lastPathName) {
@@ -250,23 +268,5 @@ observer.observe(document.body, {
   childList: true,
   subtree: true
 });
-
-async function loadSettings() {
-    const result = await chrome.storage.sync.get("settings");
-
-    settings = result.settings ?? DEFAULTS;
-
-    if (settings.verboseLogging) {
-        console.log("Settings loaded:", settings);
-    }
-
-    if (completeButton){
-        if (settings.disableCompleteOnPolicyViolation) {
-            completeButton.setAttribute("disabled", "true");
-        } else {
-            completeButton.removeAttribute("disabled");
-        }
-    }
-}
 
 chrome.storage.onChanged.addListener(loadSettings);
