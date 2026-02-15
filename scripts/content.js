@@ -161,13 +161,13 @@ function errorizePullRequest(completeButton, violatedPolicies){
     const completeSpan = completeButton.querySelector('.bolt-button-text');
     const divider = completeButton.parentElement.querySelector('.bolt-split-button-divider');
     const dropdown = completeButton.parentElement.querySelector('.bolt-split-button-option');
-    completeSpan.innerHTML = "Complete (Disabled)";
 
     completeButton.classList.remove("primary");
     completeButton.style.setProperty("background-color", "var(--palette-error-10)");
 
     if (settings.disableCompleteOnPolicyViolation) {
         completeButton.setAttribute("disabled", "true");
+        completeSpan.innerHTML = "Complete (Disabled)";
     }
 
     divider.style.setProperty("background-color", "var(--palette-error-10)");
