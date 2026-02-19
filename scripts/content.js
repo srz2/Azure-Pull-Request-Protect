@@ -165,9 +165,13 @@ function errorizePullRequest(completeButton, violatedPolicies){
     completeButton.classList.remove("primary");
     completeButton.style.setProperty("background-color", "var(--palette-error-10)");
 
-    if (settings.disableCompleteOnPolicyViolation) {
-        completeButton.setAttribute("disabled", "true");
-        completeSpan.innerHTML = "Complete (Disabled)";
+    if (completeSpan.innerHTML.toLowerCase() == "complete") {
+        if (settings.disableCompleteOnPolicyViolation) {
+            completeSpan.innerHTML = "Complete (Disabled)";
+            completeButton.setAttribute("disabled", "true");
+        } else {
+            completeSpan.innerHTML = "⚠️ Complete ⚠️";
+        }
     }
 
     divider.style.setProperty("background-color", "var(--palette-error-10)");
