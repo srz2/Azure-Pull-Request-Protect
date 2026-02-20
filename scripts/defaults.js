@@ -5,6 +5,12 @@
 const DEFAULTS = {
   verboseLogging: false,
   disableCompleteOnPolicyViolation: true,
+  useCustomReleaseBranchLogic: false,
+  azureDevopsSettings: {
+    organization: null,
+    project: null,
+    team: null
+  },
   branchPolicies: [
     {
       source: "feature/*",

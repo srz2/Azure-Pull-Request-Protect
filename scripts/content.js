@@ -1,5 +1,3 @@
-console.log("Content script loaded.");
-
 let initialized = false;
 let settings = DEFAULTS;
 let completeButton = null;
@@ -45,11 +43,77 @@ function getPullRequestBranches(){
     }
 }
 
+async function releaseIsSealed(releaseBranch) {
+    var iteration = await getCurrentIteration();
+    if (!iteration) {
+        console.warn("Unable to determine current iteration. Assuming not sealed.");
+        return false;
+    }
+
+    // Now represents a potential date of merging code to release
+    var now = Date.now();
+
+    // Highly dependent on the iteration naming convention.
+    // This is based on the current convention used by the team, but may need to be updated if that convention changes.
+    // Example: 2026.03 (02.18 to 03.10)
+    var tempStart = iteration.name.substr(iteration.name.indexOf('(') + 1, 5);
+    var tempEnd = iteration.name.substr(iteration.name.indexOf('to') + 3, 5);
+    var year = new Date(Date.now()).getFullYear();
+    var monthStart = parseInt(tempStart.substr(0, 2));
+    var dayStart = parseInt(tempStart.substr(3, 2));
+    var monthEnd = parseInt(tempEnd.substr(0, 2));
+    var dayEnd = parseInt(tempEnd.substr(3, 2));
+    const iterationStartDate = new Date(year, monthStart - 1, dayStart);    // This doesn't actually matter
+    const iterationEndDate = new Date(year, monthEnd - 1, dayEnd);          // This doesn't actually matter
+    const prevIterationProdCodeSealDate = new Date(year, monthStart - 1, dayStart - 1); // Assuming code seal for current production release is 2 days before current iteration start date, but we use 1 day since code seal is Close Of Business
+    const prevIterationProdReleaseDate = new Date(year, monthStart - 1, dayStart + 14); // Assuming production release is 2 weeks after iteration start date
+    const currentIterationProdCodeSealDate = new Date(year, monthEnd - 1, dayEnd - 1); // Assuming code seal for production release is 1 day before iteration end date
+
+    const releaseDate = releaseBranch.split("/")[1];
+    const [, month, day] = releaseDate.split(".").map(Number);
+    const releaseBranchDate = new Date(year, month - 1, day);   // This should match the release date of prevIterationProdReleaseDate
+
+    // A branch will be in violation of code seal if:
+    // 1. It belongs to the previous production release
+    // 2. We are past the code seal date for that release
+    if ((releaseBranchDate.getTime() === prevIterationProdReleaseDate.getTime() && now >= prevIterationProdCodeSealDate.getTime())) {
+        return true;
+    }
+
+    return false;
+}
+
+function checkIfCodeSealViolated(targetBranch) {
+    // If the target branch is not a release branch, we assume it's not subject to code sealing.
+    if (!targetBranch.toLowerCase().startsWith("release/")) {
+        return false;
+    }
+
+    // Check if target is passed code seal.
+    return releaseIsSealed(targetBranch);
+}
+
 function filterPullRequestOnPolicies(source, target){
     if (settings.verboseLogging) {
         console.log("Filtering pull request on policy with the following settings:", settings);
     }
-    
+
+    if (settings.useCustomReleaseBranchLogic) {
+        var pullRequestViolatesCodeSeal = checkIfCodeSealViolated(target);
+        if (pullRequestViolatesCodeSeal) {
+            if (settings.verboseLogging) {
+                console.log(`Pull request violates code seal policy for release branches. Target branch: ${target}`);
+            }
+            return [{
+                reason: "This pull request violates the code seal policy for release branches."
+            }];
+        } else {
+            if (settings.verboseLogging) {
+                console.log(`Pull request does not violate code seal policy for release branches. Target branch: ${target}`);
+            }
+        }
+    }
+
     var matchedRules = settings.branchPolicies.filter(rule => {
         const sourceMatch = new RegExp(rule.source.replace("*", ".*")).test(source);
         const targetMatch = new RegExp(rule.target.replace("*", ".*")).test(target);
@@ -162,11 +226,34 @@ function errorizePullRequest(completeButton, violatedPolicies){
     header.appendChild(warningElement);
 }
 
+function getPullRequestIdFromUrl() {
+    const url = window.location.pathname;
+    const match = url.match(/\/pullrequest\/(\d+)/i);
+    return match ? match[1] : null;
+}
+
 async function init(){
     if (initialized) return;
     initialized = true;
 
-    var loadingSettings = await loadSettings();
+    await loadSettings();
+
+    // Get the object for easy processing of PR details.
+    var prId = getPullRequestIdFromUrl();
+    var prObject = await getPullRequestById(prId);
+    if (!prObject) {
+        console.error("Unable to fetch pull request details. Initialization aborted.");
+        return;
+    }
+    var isDraft = prObject.isDraft;
+    var isActive = prObject.status === "active";
+    if (!isActive || isDraft) {
+        if (settings.verboseLogging) {
+            console.log("Pull request is either not active or is a draft. Protections not needed.");
+        }
+        return;
+    }
+
     if (settings.verboseLogging) {
         console.log("Current settings:", settings);
     }
