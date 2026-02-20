@@ -139,14 +139,18 @@ function errorizePullRequest(completeButton, violatedPolicies){
     completeButton.classList.remove("primary");
     completeButton.style.setProperty("background-color", "var(--palette-error-10)");
 
-    if (completeSpan.innerHTML.toLowerCase() == "complete") {
+    // If the button text is "Complete", change it to indicate that it's disabled due to policy violation.
+    // If the setting doesn't disable the button, change the text to indicate the warning.
+    if (completeSpan.innerHTML.toLowerCase() === "complete") {
         if (settings.disableCompleteOnPolicyViolation) {
             completeSpan.innerHTML = "Complete (Disabled)";
-            completeButton.setAttribute("disabled", "true");
         } else {
             completeSpan.innerHTML = "⚠️ Complete ⚠️";
         }
     }
+
+    // Disable the complete button if the setting is enabled
+    completeButton.setAttribute("disabled", settings.disableCompleteOnPolicyViolation ? "true" : "false");
 
     divider.style.setProperty("background-color", "var(--palette-error-10)");
     dropdown.style.setProperty("background-color", "var(--palette-error-10)");
