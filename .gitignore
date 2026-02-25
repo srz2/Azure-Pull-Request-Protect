@@ -11,3 +11,7 @@ tsconfig.lsif.json
 
 # Don't check in API files. These should be pulled in during install
 vscode*.d.ts
+
+# Dont check in crx or pem files
+*.pem
+*.crx
