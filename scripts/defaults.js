@@ -19,18 +19,8 @@ const DEFAULTS = {
     },
     {
       source: "story/*",
-      target: "develop",
+      target: "main",
       reason: "Story branches should be merged into a feature branch."
-    },
-    {
-      source: "testing/test-feature-branch",
-      target: "testing/test-main-branch",
-      reason: "This is a testing policy to see if I can filter correctly on source and target branches."
-    },
-    {
-      source: "*",
-      target: "release/*",
-      reason: "You should not merge directly into release branches."
     }
   ]
 };
